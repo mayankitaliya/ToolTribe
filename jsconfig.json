@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "allowJs": true,
+      "checkJs": false,
+      "skipLibCheck": true,
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["./*"]
+      },
+      "noEmit": true
+    },
+    "exclude": ["node_modules", "**/*.d.ts", ".expo", "dist", "build"]
+  }
+  
