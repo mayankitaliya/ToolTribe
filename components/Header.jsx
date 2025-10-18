@@ -52,7 +52,7 @@ export default function Header() {
 
       {isWeb && (
         <View style={styles.navigation}>
-          <NavLink href="/dashboard">Dashboard</NavLink>
+          <NavLink href="/">Dashboard</NavLink>
           <NavLink href="/browse">Browse</NavLink>
           <NavLink href="/listings">My Listings</NavLink>
         </View>

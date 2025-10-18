@@ -89,7 +89,6 @@ export default function RootLayout() {
       value={colorScheme === "dark" ? AppDarkTheme : AppLightTheme}
     >
       <WebAutofillFix />
-      {/* Set up the navigator with screens for both auth and main app */}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />

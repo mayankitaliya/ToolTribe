@@ -1,115 +1,109 @@
-import FooterTabBar from "@/components/FooterTabBar";
-import Header from "@/components/Header";
-import { useTheme } from "@react-navigation/native";
+import { auth, db } from "@/config/firebase";
+import { useRouter } from "expo-router";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { auth, db } from "../../config/firebase";
-import Dashboard from "./dashboard";
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
-  const { colors } = useTheme();
-  const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
-  const signOut = async (auth) => {
-    try {
-      await auth.signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const colors = {
+    bg: isDark ? "#0D1117" : "#FFFFFF",
+    text: isDark ? "#E6EDF3" : "#212B36",
+    card: isDark ? "#161B22" : "#F7F8F9",
+    border: isDark ? "#30363D" : "rgba(145,158,171,0.2)",
   };
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      const user = auth.currentUser;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setLoading(false);
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(userDocRef);
-
-          if (docSnap.exists()) {
-            setUserProfile(docSnap.data());
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        } finally {
-          setLoading(false);
-        }
+        const docSnap = await getDoc(doc(db, "users", user.uid));
+        setUserData(docSnap.data());
+      } else {
+        router.replace("/login");
       }
-    };
-
-    fetchUserProfile();
+      setLoading(false);
+    });
+    return unsubscribe;
   }, []);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.replace("/login");
+  };
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView style={[styles.centered, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={isDark ? "#fff" : "#212B36"} />
+      </SafeAreaView>
     );
   }
 
   return (
-    // <View style={[styles.container, { backgroundColor: colors.background }]}>
-    //   <Text style={[styles.title, { color: colors.text }]}>
-    //     Welcome to ToolTribe,
-    //   </Text>
-    //   <Text style={[styles.name, { color: colors.primary }]}>
-    //     {userProfile?.fullName || "User"}!
-    //   </Text>
-    //   <Pressable
-    //     style={[styles.logout, { backgroundColor: colors.primary }]}
-    //     onPress={() => signOut(auth)}
-    //   >
-    //     <Text style={[styles.logoutText, { color: colors.text }]}>Logout</Text>
-    //   </Pressable>
-    // </View>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.greeting, { color: colors.text }]}>
+              Welcome back 👋
+            </Text>
+            <Text style={[styles.userName, { color: colors.text }]}>
+              {userData?.fullName}
+            </Text>
+          </View>
+        </View>
 
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Header />
-        <Dashboard />
-        <FooterTabBar />
-      </View>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.cardText, { color: colors.text }]}>
+            Email: {userData?.email}
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
+  safeArea: { flex: 1 },
+  container: { padding: 24 },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-  },
-  name: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginTop: 8,
-  },
-  logout: {
-    marginTop: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  greeting: { fontSize: 16 },
+  userName: { fontSize: 28, fontWeight: "bold" },
+  logoutButton: {
+    padding: 10,
     borderRadius: 8,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "bold",
+  card: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
   },
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  container: {
-    flex: 1,
-    position: "relative", // Needed for the footer to position correctly
-  },
+  cardText: { fontSize: 16 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
