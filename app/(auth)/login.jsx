@@ -1,8 +1,11 @@
+import { auth } from "@/config/firebase";
 import { Feather } from "@expo/vector-icons";
+import { useTheme } from "@react-navigation/native";
 import { Link } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   SafeAreaView,
@@ -14,9 +17,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import Toast from "react-native-toast-message";
-import { auth } from "../../config/firebase";
 
-// 1. Create a reusable Illustration component
+// --- (Illustration and LeftPanel components remain the same) ---
 const Illustration = () => (
   <Image
     source={{
@@ -27,36 +29,40 @@ const Illustration = () => (
   />
 );
 
-// This is the left panel for the web view
-const LeftPanel = () => (
-  <View style={styles.leftPanel}>
-    <View>
-      <Text style={styles.title}>Hi, Welcome back</Text>
+const LeftPanel = () => {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.leftPanel, { backgroundColor: colors.card }]}>
+      <Illustration />
     </View>
-    <Illustration />
-  </View>
-);
+  );
+};
 
 export default function Login() {
   const { width } = useWindowDimensions();
   const breakpoint = 768;
   const isWeb = width > breakpoint;
 
+  // 2. Get the 'dark' boolean from the theme
+  const { colors, dark: isDark } = useTheme();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ... (Your handleSignIn function remains the same)
+  // --- (handleSignIn function remains the same) ---
   const handleSignIn = async () => {
     if (!email || !password) {
       Toast.show({
-        type: "error",
+        type: "info",
         text1: "Missing Fields",
         text2: "Please enter both email and password.",
       });
       return;
     }
     try {
+      setIsLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       Toast.show({
@@ -64,13 +70,17 @@ export default function Login() {
         text1: "Sign In Error",
         text2: error.message,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const containerStyle = isWeb ? styles.containerWeb : styles.containerMobile;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+    >
       <View style={containerStyle}>
         {isWeb && <LeftPanel />}
 
@@ -79,45 +89,64 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.formContainer}>
-            {/* 2. ADD THE ILLUSTRATION HERE FOR THE MOBILE VIEW */}
             {!isWeb && (
               <View style={styles.headerMobile}>
                 <Illustration />
-                <Text style={[styles.title]}>Hi, Welcome back</Text>
               </View>
             )}
 
-            {/* Form inputs remain the same... */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email address</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Email address
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.card,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
                 placeholder="Enter your email"
-                placeholderTextColor="#919EAB"
+                placeholderTextColor={colors.border}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                // 4. This makes the mobile keyboard dark in dark mode
+                keyboardAppearance={isDark ? "dark" : "light"}
               />
             </View>
 
             <View style={styles.inputGroup}>
               <View style={styles.passwordHeader}>
-                <Text style={styles.inputLabel}>Password</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  Password
+                </Text>
                 <Link href="/forgot-password" asChild>
                   <Pressable>
-                    <Text style={styles.link}>Forgot password?</Text>
+                    <Text style={[styles.link]}>Forgot password?</Text>
                   </Pressable>
                 </Link>
               </View>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.card,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   placeholder="Enter your password"
-                  placeholderTextColor="#919EAB"
+                  placeholderTextColor={colors.border}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!isPasswordVisible}
+                  // 4. This makes the mobile keyboard dark in dark mode
+                  keyboardAppearance={isDark ? "dark" : "light"}
                 />
                 <Pressable
                   onPress={() => setIsPasswordVisible(!isPasswordVisible)}
@@ -126,23 +155,33 @@ export default function Login() {
                   <Feather
                     name={isPasswordVisible ? "eye" : "eye-off"}
                     size={20}
-                    color="#919EAB"
+                    color={colors.border}
                   />
                 </Pressable>
               </View>
             </View>
 
             <View style={styles.switchTabs}>
-              <Text style={styles.formSubtitle}>Don't have an account? </Text>
+              <Text style={[styles.formSubtitle, { color: colors.text }]}>
+                Don't have an account?{" "}
+              </Text>
               <Link href="/register" asChild>
                 <Pressable>
-                  <Text style={styles.link}>Get started</Text>
+                  <Text style={[styles.link]}>Get started</Text>
                 </Pressable>
               </Link>
             </View>
 
-            <Pressable style={styles.button} onPress={handleSignIn}>
-              <Text style={styles.buttonText}>Sign in</Text>
+            <Pressable
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
             </Pressable>
           </View>
         </ScrollView>
@@ -151,13 +190,12 @@ export default function Login() {
   );
 }
 
-// 3. Update the styles
+// --- (Static styles remain the same) ---
 const styles = StyleSheet.create({
-  // ... (safeArea, containerMobile, containerWeb, rightPanel, formContainer, etc. are the same)
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
+  // ... (all other static styles)
   containerMobile: {
     flex: 1,
     flexDirection: "column",
@@ -171,9 +209,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    backgroundColor: "#F7F8F9",
   },
-  // Use the style that you confirmed works
   illustration: {
     width: 280,
     height: 200,
@@ -189,26 +225,21 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
   },
-  // UPDATED: Style for the mobile header
   headerMobile: {
-    alignItems: "center", // This will center the illustration
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
-    textAlign: "center",
     fontSize: 28,
     fontWeight: "bold",
-    color: "#212B36",
   },
   subtitle: {
     fontSize: 16,
-    color: "#637381",
     marginTop: 8,
   },
   formTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#212B36",
     marginBottom: 8,
   },
   switchTabs: {
@@ -218,29 +249,24 @@ const styles = StyleSheet.create({
   },
   formSubtitle: {
     fontSize: 14,
-    color: "#637381",
   },
   link: {
-    color: "#00A76F",
     fontWeight: "600",
+    color: "#0a7ea4",
   },
   inputGroup: {
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
-    color: "#212B36",
     marginBottom: 8,
     fontWeight: "500",
   },
   input: {
-    backgroundColor: "#F7F8F9",
     borderWidth: 1,
-    borderColor: "rgba(145, 158, 171, 0.2)",
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: "#212B36",
     height: 52,
   },
   passwordHeader: {
@@ -268,5 +294,9 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  // 6. Add this new style
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });

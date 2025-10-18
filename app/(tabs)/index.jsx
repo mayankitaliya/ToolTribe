@@ -27,13 +27,10 @@ export default function HomeScreen() {
       if (user) {
         setLoading(false);
         try {
-          // Get the document reference
           const userDocRef = doc(db, "users", user.uid);
-          // Fetch the document
           const docSnap = await getDoc(userDocRef);
 
           if (docSnap.exists()) {
-            // Set user profile data if document exists
             setUserProfile(docSnap.data());
           }
         } catch (error) {
@@ -45,9 +42,8 @@ export default function HomeScreen() {
     };
 
     fetchUserProfile();
-  }, []); // Empty dependency array ensures this runs once when the component mounts
+  }, []);
 
-  // Show a loading spinner while fetching data
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>

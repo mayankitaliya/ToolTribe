@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { useTheme } from "@react-navigation/native"; // 1. Import useTheme
 import { useRouter, useSegments } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -11,10 +12,13 @@ const TABS = [
   { name: "profile", label: "Profile", icon: "user" },
 ];
 
-const TabButton = ({ tab, isActive }) => {
+// 2. Pass colors down as a prop
+const TabButton = ({ tab, isActive, colors }) => {
   const router = useRouter();
-  const activeColor = "#212B36";
-  const inactiveColor = "#919EAB";
+
+  // 3. Use theme colors
+  const activeColor = colors.text;
+  const inactiveColor = colors.border; // Using border color for inactive icons
 
   return (
     <Pressable style={styles.tab} onPress={() => router.push(`/${tab.name}`)}>
@@ -38,25 +42,35 @@ const TabButton = ({ tab, isActive }) => {
 export default function FooterTabBar() {
   const segments = useSegments();
   const activeTab = segments[segments.length - 1] || "dashboard";
+  const { colors } = useTheme(); // 4. Get theme colors
 
   return (
-    <View style={styles.footer}>
+    // 5. Apply dynamic background and border colors
+    <View
+      style={[
+        styles.footer,
+        { backgroundColor: colors.background, borderTopColor: colors.border },
+      ]}
+    >
       {TABS.map((tab) => (
-        <TabButton key={tab.name} tab={tab} isActive={tab.name === activeTab} />
+        <TabButton
+          key={tab.name}
+          tab={tab}
+          isActive={tab.name === activeTab}
+          colors={colors} // 6. Pass colors to child
+        />
       ))}
     </View>
   );
 }
 
+// 7. Stylesheet now only contains static layout styles
 const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-    // On mobile, this could be positioned absolutely at the bottom
   },
   tab: {
     flex: 1,

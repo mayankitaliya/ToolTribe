@@ -30,6 +30,8 @@
 //   );
 // }
 
+import { WebAutofillFix } from "@/components/WebAutofillFix";
+import { Colors } from "@/constants/theme";
 import {
   DarkTheme,
   DefaultTheme,
@@ -40,30 +42,53 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 import Toast from "react-native-toast-message";
-import { auth } from "../config/firebase"; // Adjust path if needed
+import { auth } from "../config/firebase";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
+  const AppLightTheme = {
+    ...DefaultTheme, // Start with all the default values (fonts, etc.)
+    colors: {
+      ...DefaultTheme.colors, // Start with default colors
+      primary: Colors.light.tint, // Override specific colors
+      background: Colors.light.background,
+      card: Colors.light.background,
+      text: Colors.light.text,
+      border: Colors.light.icon,
+      notification: Colors.light.tint,
+    },
+  };
+
+  const AppDarkTheme = {
+    ...DarkTheme, // Start with all the default dark values
+    colors: {
+      ...DarkTheme.colors, // Start with default dark colors
+      primary: Colors.dark.tint, // Override specific colors
+      background: Colors.dark.background,
+      card: Colors.dark.background,
+      text: Colors.dark.text,
+      border: Colors.dark.icon,
+      notification: Colors.dark.tint,
+    },
+  };
+
   useEffect(() => {
-    // onAuthStateChanged returns an unsubscriber
     const unsub = onAuthStateChanged(auth, (user) => {
-      // Check if a user object exists
       if (user) {
-        // User is signed in, redirect them to the main app (tabs)
         router.replace("/(tabs)");
       } else {
-        // User is signed out, redirect them to the sign-in screen
         router.replace("/login");
       }
     });
-
-    // Unsubscribe from the listener when the component unmounts
     return () => unsub();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider
+      value={colorScheme === "dark" ? AppDarkTheme : AppLightTheme}
+    >
+      <WebAutofillFix />
       {/* Set up the navigator with screens for both auth and main app */}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
